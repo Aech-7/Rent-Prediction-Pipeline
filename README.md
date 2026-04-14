@@ -1,8 +1,8 @@
 # Rent Prediction Pipeline (STT-AI Assignment 4)
 
-## 🚀 Live Application
+## Hugging Face Application
 
-https://your-username-rent-predictor.hf.space
+[https://your-username-rent-predictor.hf.space](https://huggingface.co/spaces/Aech07/STTAI_A4)
 
 ---
 
@@ -101,7 +101,9 @@ The live link is provided at the top of this README.
 ## Team Members
 
 * Harshada Kale
-* [Teammate Name]
-* [Teammate Name]
+* Ishika Patel
+* Diya Nandan
+* Ginisha Garg
+
 
 ---
