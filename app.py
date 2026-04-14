@@ -1,77 +1,46 @@
-"""
-app.py — UrbanNest Analytics: Dynamic House Rent Prediction Engine
-Task 2: Streamlit Web Application
 
-HOW TO RUN:
-    streamlit run app.py
-
-WHAT THIS FILE DOES:
-    1. Loads the trained Random Forest model  →  models/best_rf_model.pkl
-    2. Loads the saved encoders               →  models/encoders.pkl
-         encoders.pkl contains a dict with TWO keys:
-           - "encoders"         → {"city": <LabelEncoder>, "location": <LabelEncoder>, ...}
-           - "train_categories" → {"city": {"Mumbai": 0, "Delhi": 1, ...}, ...}
-    3. Builds dropdowns dynamically from train_categories (no hardcoding needed!)
-    4. On button click: encodes inputs → feeds to model → shows predicted rent
-
-Dataset features (in this exact order):
-    ['location', 'city', 'latitude', 'longitude', 'numBathrooms',
-     'numBalconies', 'isNegotiable', 'SecurityDeposit', 'Status',
-     'Size_ft²', 'BHK', 'rooms_num', 'property_type', 'verification_days']
-"""
-
-import streamlit as st
-import pickle
+import streamlit as st # used for the  UI
+import pickle # used for loading the saved model and encoders
 import numpy as np
 import pandas as pd
 import os
 
+# SECTION 1: setting up PAGE CONFIG
 
-# ═══════════════════════════════════════════════════════════════════
-# SECTION 1: PAGE CONFIG
-# Must be the VERY FIRST streamlit call in the entire script.
-# ═══════════════════════════════════════════════════════════════════
 st.set_page_config(
-    page_title="UrbanNest — Rent Predictor",
-    page_icon="🏠",
-    layout="centered",
+    page_title="UrbanNest — Rent Predictor", page_icon="🏠", layout="centered",
 )
 
 
-# ═══════════════════════════════════════════════════════════════════
-# SECTION 2: LOAD MODEL & ENCODERS
-#
-# Your notebook saved encoders.pkl with this structure:
-#   {
-#     "encoders":         {"city": <LE>, "location": <LE>, "Status": <LE>, "property_type": <LE>},
-#     "train_categories": {"city": {"Mumbai": 0, "Delhi": 1, ...},
-#                          "location": {"Andheri West": 0, ...},
-#                          "Status": {"Ready to Move": 0, ...},
-#                          "property_type": {"Apartment": 0, ...}}
-#   }
-#
-# @st.cache_resource → files are read from disk only ONCE when the
-# app first loads, then reused from memory on every interaction.
-# ═══════════════════════════════════════════════════════════════════
+# SECTION 2: LOAD MODEL, CATEGORIES & ENCODERS
+# We need Model(to predict), Encoders(text to numbers conversion), and Categories (to know what options to show in dropdowns).
+
+
+# @st.cache_resource = In Streamlit, it's a specialized decorator used to handle "expensive" objects that should only be created or loaded once.
+# it happens because python script runs from top to bottom on every user interaction, so without caching, the model would be loaded from disk every time a user changes an input,which would be very slow, hence caching is used.
+# hence, @st.cache_resource is perfect for loading machine learning models and encoders, which are typically large and time-consuming to load. By caching them, we ensure that they are loaded only once when the app starts, and subsequent interactions will use the cached versions, resulting in much faster response times.
+# if we ever need to update the model or encoders, we can simply change the files on disk and restart the Streamlit app or clear the cache to load the new versions.
+
+
 @st.cache_resource
 def load_artifacts():
-    model_path    = os.path.join("models", "best_rf_model.pkl")
-    encoders_path = os.path.join("models", "encoders.pkl")   # ← your exact filename
+    model_path = os.path.join("models", "best_rf_model.pkl")
+    encoders_path = os.path.join("models", "encoders.pkl")
 
-    with open(model_path, "rb") as f:
-        model = pickle.load(f)
+    with open(model_path, "rb") as f: #rb is read binary mode, used for binary files (.pkl) 
+        model = pickle.load(f) # pickle convert binary file back to python object (RandomForestRegressor in this case)
 
     with open(encoders_path, "rb") as f:
-        saved = pickle.load(f)              # loads the outer dict
+        saved = pickle.load(f) 
 
-    # Unpack the two keys your notebook saved
-    encoders         = saved["encoders"]          # LabelEncoder objects (used for .transform())
-    train_categories = saved["train_categories"]  # plain dicts  (used to build dropdowns)
+    # Unpack the two keys from "saved"
+    encoders = saved["encoders"] # LabelEncoder (used for .transform() later)
+    train_categories = saved["train_categories"]  # category lists (used for dropdown options)
 
     return model, encoders, train_categories
 
 
-# Try loading — show a clear error banner if Task 1 isn't done yet
+# Try Loading the artifacts. 
 try:
     model, encoders, train_categories = load_artifacts()
     artifacts_loaded = True
@@ -80,15 +49,13 @@ except FileNotFoundError as e:
     missing_file_msg = str(e)
 
 
-# ═══════════════════════════════════════════════════════════════════
 # SECTION 3: BUILD DROPDOWN OPTIONS FROM train_categories
-#
+
 # train_categories["city"] looks like: {"Delhi": 0, "Hisar": 1, "Mumbai": 2, "Pune": 3}
-# .keys() gives us the human-readable strings for the selectbox options.
-# No hardcoding needed — these come directly from your notebook!
-#
-# City coordinates — used to pre-fill latitude & longitude fields.
-# ═══════════════════════════════════════════════════════════════════
+# .keys() gives us the human-readable strings/labels (not numbers) for the selectbox options.
+# City coordinates: used to pre-fill latitude & longitude fields.
+# no hardcoding of dropdown options anywhere in the code. If we add a new city to the dataset and rebuild encoders.pkl, it will automatically appear in the app.
+
 CITY_COORDS = {
     "Mumbai": (19.0760, 72.8777),
     "Pune":   (18.5204, 73.8567),
@@ -96,41 +63,28 @@ CITY_COORDS = {
     "Hisar":  (29.1492, 75.7217),
 }
 
-
-# ═══════════════════════════════════════════════════════════════════
 # SECTION 4: PAGE HEADER
-# ═══════════════════════════════════════════════════════════════════
+
 st.title("🏠 UrbanNest Analytics")
 st.subheader("Dynamic House Rent Prediction Engine")
-st.markdown(
-    "Fill in the property details below and click **Predict Rent** "
-    "to get an instant ML-powered estimate."
-)
+st.markdown("Fill in the property details below and click **Predict Rent** to get an instant ML-powered estimate.")
 st.divider()
 
-# Show an error and stop rendering if model files are missing
+# Show an error and stop if model files are missing
 if not artifacts_loaded:
     st.error(
-        f"⚠️ Could not load model files. Make sure Task 1 is complete "
-        f"and both `models/best_rf_model.pkl` and `models/encoders.pkl` exist.\n\n"
+        f"Could not load model files. Make sure `models/best_rf_model.pkl` and `models/encoders.pkl` exist.\n"
         f"**Details:** {missing_file_msg}"
     )
     st.stop()
 
+# SECTION 5: INPUTS 
 
-# ═══════════════════════════════════════════════════════════════════
-# SECTION 5: INPUT WIDGETS
-#
-# We build every widget from the exact keys in train_categories so
-# the options always match what the LabelEncoder knows.
-# ═══════════════════════════════════════════════════════════════════
 st.markdown("### 📍 Location Details")
 
-col1, col2 = st.columns(2)
-
+col1, col2 = st.columns(2) # allows side by side UI, because normally streamlit stacks it vertically. 
 with col1:
-    # ── city ──────────────────────────────────────────────────────
-    # train_categories["city"].keys() → ["Delhi", "Hisar", "Mumbai", "Pune"]
+    # CITY
     city_options = sorted(train_categories["city"].keys())
 
     city = st.selectbox(
@@ -140,28 +94,27 @@ with col1:
     )
 
 with col2:
-    # ── location ──────────────────────────────────────────────────
-    # All locations the encoder knows about
+    # LOCATION
     location_options = sorted(train_categories["location"].keys())
 
     location = st.selectbox(
         label="Location / Neighbourhood",
         options=location_options,
-        help="Select the neighbourhood of the property."
+        help="Select the neighbourhood/area of the property."
     )
 
-# ── latitude & longitude ──────────────────────────────────────────
-# Pre-filled with city centre coordinates; user can fine-tune
-default_lat, default_lon = CITY_COORDS.get(city, (20.5937, 78.9629))  # India centre as fallback
+# latitude & longitude 
+# Pre-filled with city centre coordinates, but can be adjusted.
 
+default_lat, default_lon = CITY_COORDS.get(city, (20.5937, 78.9629))  # India centre as fallback, if city not found in CITY_COORDS. 
 col3, col4 = st.columns(2)
 
 with col3:
     latitude = st.number_input(
         label="Latitude",
-        value=float(default_lat),
+        value=float(default_lat), # display default value, but user can change it. 
         format="%.4f",
-        help="Pre-filled with city centre. Adjust for the exact property location."
+        help="Pre-filled with city centre. Adjust for the exact property latitude."
     )
 
 with col4:
@@ -169,6 +122,7 @@ with col4:
         label="Longitude",
         value=float(default_lon),
         format="%.4f",
+        help="Pre-filled with city centre. Adjust for the exact property longitude."
     )
 
 st.markdown("### 🏗️ Property Details")
@@ -176,28 +130,29 @@ st.markdown("### 🏗️ Property Details")
 col5, col6 = st.columns(2)
 
 with col5:
-    # ── property_type ─────────────────────────────────────────────
+    # PROPERTY TYPE
     property_type_options = sorted(train_categories["property_type"].keys())
 
     property_type = st.selectbox(
         label="Property Type",
         options=property_type_options,
+        help="Type of the property (e.g., Apartment, Independent House, etc.)."
     )
 
 with col6:
-    # ── Status ────────────────────────────────────────────────────
+    # STATUS
     status_options = sorted(train_categories["Status"].keys())
 
     status = st.selectbox(
         label="Status",
         options=status_options,
-        help="Current construction status of the property."
+        help="State current construction status of the property."
     )
 
 col7, col8 = st.columns(2)
 
 with col7:
-    # ── Size_ft² ──────────────────────────────────────────────────
+    # SIZE (ft²)
     size = st.number_input(
         label="Size (ft²)",
         min_value=100,
@@ -208,11 +163,11 @@ with col7:
     )
 
 with col8:
-    # ── BHK ───────────────────────────────────────────────────────
+    # BHK
     bhk = st.number_input(
         label="BHK",
         min_value=1,
-        max_value=10,
+        max_value=6,
         value=2,
         step=1,
         help="Number of Bedrooms, Hall, and Kitchen."
@@ -221,7 +176,7 @@ with col8:
 col9, col10 = st.columns(2)
 
 with col9:
-    # ── rooms_num ─────────────────────────────────────────────────
+    # NUMBER OF ROOMS
     rooms_num = st.number_input(
         label="Total Rooms",
         min_value=1,
@@ -232,7 +187,7 @@ with col9:
     )
 
 with col10:
-    # ── numBathrooms ──────────────────────────────────────────────
+    # NUMBER OF BATHROOMS
     num_bathrooms = st.number_input(
         label="Bathrooms",
         min_value=1,
@@ -244,7 +199,7 @@ with col10:
 col11, col12 = st.columns(2)
 
 with col11:
-    # ── numBalconies ──────────────────────────────────────────────
+    # NUMBER OF BALCONIES
     num_balconies = st.number_input(
         label="Balconies",
         min_value=0,
@@ -254,7 +209,7 @@ with col11:
     )
 
 with col12:
-    # ── verification_days ─────────────────────────────────────────
+    # VERIFICATION DAYS
     verification_days = st.number_input(
         label="Verification Days",
         min_value=0,
@@ -269,7 +224,7 @@ st.markdown("### 💰 Financial Details")
 col13, col14 = st.columns(2)
 
 with col13:
-    # ── SecurityDeposit ───────────────────────────────────────────
+    # SECURITY DEPOSIT
     security_deposit = st.number_input(
         label="Security Deposit (₹)",
         min_value=0,
@@ -280,7 +235,7 @@ with col13:
     )
 
 with col14:
-    # ── isNegotiable ──────────────────────────────────────────────
+    # HOW MUCH RENT IS NEGOTIABLE
     # Stored as 0/1 in dataset; we collect Yes/No and convert below
     is_negotiable_str = st.selectbox(
         label="Is Rent Negotiable?",
@@ -289,114 +244,59 @@ with col14:
 
 st.divider()
 
-
-# ═══════════════════════════════════════════════════════════════════
 # SECTION 6: PREDICT BUTTON & LOGIC
-# ═══════════════════════════════════════════════════════════════════
-if st.button("🔮 Predict Rent", use_container_width=True, type="primary"):
 
-    # ── Step A: Encode categoricals using the saved LabelEncoders ──
-    #
-    # encoders["city"] is a fitted LabelEncoder object.
-    # .transform(["Mumbai"]) returns array([2]); [0] extracts the int.
-    #
-    # Because your notebook fitted on combined train+test values,
-    # every option in the dropdowns is guaranteed to be known — so
-    # ValueError should never occur. We still catch it just in case.
-    # ──────────────────────────────────────────────────────────────
+if st.button("🔮 Predict Rent", use_container_width=True, type="primary"): # primary means important action. Only color of button will change, not the functionality. 
+
+    # Encode categoricals using the saved LabelEncoders
+    
     try:
-        city_enc     = encoders["city"].transform([city])[0]
+        city_enc = encoders["city"].transform([city])[0]
         location_enc = encoders["location"].transform([location])[0]
-        status_enc   = encoders["Status"].transform([status])[0]
-        prop_enc     = encoders["property_type"].transform([property_type])[0]
+        status_enc = encoders["Status"].transform([status])[0]
+        prop_enc = encoders["property_type"].transform([property_type])[0]
 
     except ValueError as err:
         st.error(
             f"❌ **Encoding failed:** {err}\n\n"
             "A selected value wasn't found in the encoder. "
-            "This shouldn't happen if encoders.pkl was built from your full dataset."
         )
         st.stop()
 
     except KeyError as err:
         st.error(
             f"❌ **Encoder key missing:** {err}\n\n"
-            "The encoders.pkl dict is missing an expected key. "
-            "Expected keys: `city`, `location`, `Status`, `property_type`."
+            "The encoders.pkl dict is missing an expected key (like city/location/Status/property_type). "
         )
         st.stop()
 
-    # ── Step B: Convert Yes/No → 1/0 ──────────────────────────────
+    # Convert Yes/No to 1/0 for non_ negotiable field, since model was trained on 0/1 values.
     is_negotiable = 1 if is_negotiable_str == "Yes" else 0
 
-    # ── Step C: Assemble the feature vector ───────────────────────
-    #
-    # ORDER MUST EXACTLY match X_train column order from your notebook:
-    # ['location', 'city', 'latitude', 'longitude', 'numBathrooms',
-    #  'numBalconies', 'isNegotiable', 'SecurityDeposit', 'Status',
-    #  'Size_ft²', 'BHK', 'rooms_num', 'property_type', 'verification_days']
-    #
-    # model.predict() needs a 2D array → shape (1, 14)
-    # That's why we use double brackets: np.array([[ ... ]])
-    # ──────────────────────────────────────────────────────────────
-    features = np.array([[
-        location_enc,       # location          (label-encoded int)
-        city_enc,           # city              (label-encoded int)
-        latitude,           # latitude          (raw float)
-        longitude,          # longitude         (raw float)
-        num_bathrooms,      # numBathrooms      (raw int)
-        num_balconies,      # numBalconies      (raw int)
-        is_negotiable,      # isNegotiable      (0 or 1)
-        security_deposit,   # SecurityDeposit   (raw int)
-        status_enc,         # Status            (label-encoded int)
-        size,               # Size_ft²          (raw float)
-        bhk,                # BHK               (raw int)
-        rooms_num,          # rooms_num         (raw int)
-        prop_enc,           # property_type     (label-encoded int)
-        verification_days,  # verification_days (raw int)
-    ]])
-    # Final shape: (1, 14) ✓
+    # Creating the feature vector
+    # model.predict() needs a 2D array, hence the double brackets is used. Usually, we give features for multiple samples, hence the shape would be (n_samples, n_features).
+    features = np.array([[ location_enc, city_enc, latitude, longitude, num_bathrooms, num_balconies, is_negotiable, security_deposit, status_enc,size, bhk, rooms_num, prop_enc, verification_days]]) # Final shape: (1, 14) 
 
-    # ── Step D: Get prediction ─────────────────────────────────────
+    # Get prediction
     predicted_rent = model.predict(features)[0]
-    # .predict() returns array([35000.0]); [0] gives the scalar
-
-    # ── Step E: Show result ────────────────────────────────────────
+    # .predict() returns numpy  array([35000.0]); [0] gives the scalar value, since only 1 output is there. 
+    
+    # Show result
     st.success(f"### 💰 Estimated Monthly Rent: ₹ {predicted_rent:,.0f}")
     st.caption("Prediction by Random Forest model · UrbanNest Analytics")
 
-    # Debug table — shows raw vs encoded values sent to the model
-    # Very useful for your viva demo to explain what's happening!
+    # Debug table: shows raw vs encoded values sent to the model
     with st.expander("🔍 View encoded inputs sent to the model"):
         debug_df = pd.DataFrame({
-            "Feature": [
-                "location", "city", "latitude", "longitude",
-                "numBathrooms", "numBalconies", "isNegotiable",
-                "SecurityDeposit", "Status", "Size_ft²",
-                "BHK", "rooms_num", "property_type", "verification_days"
-            ],
-            "What you selected": [
-                location, city, latitude, longitude,
-                num_bathrooms, num_balconies, is_negotiable_str,
-                security_deposit, status, size,
-                bhk, rooms_num, property_type, verification_days
-            ],
-            "Encoded value (sent to model)": [
-                location_enc, city_enc, latitude, longitude,
-                num_bathrooms, num_balconies, is_negotiable,
-                security_deposit, status_enc, size,
-                bhk, rooms_num, prop_enc, verification_days
-            ],
+            "Feature": [ "location", "city", "latitude", "longitude", "numBathrooms", "numBalconies", "isNegotiable","SecurityDeposit", "Status", "Size_ft²", "BHK", "rooms_num", "property_type", "verification_days"],
+            "What you selected": [location, city, latitude, longitude, num_bathrooms, num_balconies, is_negotiable_str, security_deposit, status, size, bhk, rooms_num, property_type, verification_days],
+            "Encoded value": [location_enc, city_enc, latitude, longitude, num_bathrooms, num_balconies, is_negotiable, security_deposit, status_enc, size,bhk, rooms_num, prop_enc, verification_days], # encoded values are sent to model. 
         })
-
-        debug_df = debug_df.astype(str) # Convert all to string 
-        st.dataframe(debug_df,width="stretch", hide_index=True)
-
     
+        st.dataframe(debug_df, use_container_width=True, hide_index=True)
 
-
-# ═══════════════════════════════════════════════════════════════════
 # SECTION 7: FOOTER
-# ═══════════════════════════════════════════════════════════════════
+
 st.markdown("---")
 st.caption("UrbanNest Analytics · Powered by Random Forest · Built with Streamlit 🚀")
+
