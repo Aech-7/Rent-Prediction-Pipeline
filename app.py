@@ -293,7 +293,8 @@ if st.button("🔮 Predict Rent", use_container_width=True, type="primary"): # p
             "Encoded value": [location_enc, city_enc, latitude, longitude, num_bathrooms, num_balconies, is_negotiable, security_deposit, status_enc, size,bhk, rooms_num, prop_enc, verification_days], # encoded values are sent to model. 
         })
     
-        st.dataframe(debug_df, use_container_width=True, hide_index=True)
+        debug_df = debug_df.astype(str) # Convert all to string 
+        st.dataframe(debug_df,width="stretch", hide_index=True)
 
 # SECTION 7: FOOTER
 
