@@ -2,7 +2,7 @@
 
 ## Hugging Face Application
 
-[https://your-username-rent-predictor.hf.space](https://huggingface.co/spaces/Aech07/STTAI_A4)
+[https://your-Aech07-rent-predictor.hf.space](https://huggingface.co/spaces/Aech07/STTAI_A4)
 
 ---
 
