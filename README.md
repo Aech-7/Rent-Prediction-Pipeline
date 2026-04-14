@@ -17,8 +17,8 @@ The workflow includes data preprocessing, model training, application developmen
 ## Approach
 
 * A **Random Forest Regressor** was used for rent prediction
-* Feature engineering and encoding were applied to handle categorical variables
-* A **Streamlit application** was developed to allow user input and display predictions
+* Feature engineering and encoding were applied for categorical variables
+* A **Streamlit application** was developed for user interaction
 * The application was containerized using **Docker**
 * Deployment was carried out using **Hugging Face Spaces (Docker)**
 
@@ -28,7 +28,7 @@ The workflow includes data preprocessing, model training, application developmen
 
 ### Without Docker
 
-```bash id="pivuzp"
+```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
@@ -39,19 +39,19 @@ streamlit run app.py
 
 Build the image:
 
-```bash id="i4ar45"
+```bash
 docker build -t rent-app .
 ```
 
 Run the container:
 
-```bash id="cdy0ci"
+```bash
 docker run -p 8501:8501 rent-app
 ```
 
 Access the app at:
 
-```id="yy8v2d"
+```
 http://localhost:8501
 ```
 
@@ -59,7 +59,7 @@ http://localhost:8501
 
 ## Project Structure
 
-```id="udbb0v"
+```
 .
 ├── app.py
 ├── Dockerfile
@@ -73,12 +73,15 @@ http://localhost:8501
 
 ---
 
-## Model File
+## Model Storage
 
-Due to GitHub’s file size limitations, the trained model is not included in the repository.
+The trained model files are managed using Git LFS due to their large size.
+Make sure Git LFS is installed before cloning the repository:
 
-Download link:
-https://your-drive-link
+```bash
+git lfs install
+git lfs pull
+```
 
 ---
 
