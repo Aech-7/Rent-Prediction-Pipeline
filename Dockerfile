@@ -6,6 +6,7 @@ FROM python:3.10
 
 WORKDIR /app
 
+COPY requirements.txt .
 #Install depecdencies
 
 RUN pip install -r requirements.txt
