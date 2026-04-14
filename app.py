@@ -258,14 +258,14 @@ if st.button("🔮 Predict Rent", use_container_width=True, type="primary"): # p
 
     except ValueError as err:
         st.error(
-            f"❌ **Encoding failed:** {err}\n\n"
+            f"**Encoding failed:** {err}\n\n"
             "A selected value wasn't found in the encoder. "
         )
         st.stop()
 
     except KeyError as err:
         st.error(
-            f"❌ **Encoder key missing:** {err}\n\n"
+            f" **Encoder key missing:** {err}\n\n"
             "The encoders.pkl dict is missing an expected key (like city/location/Status/property_type). "
         )
         st.stop()
@@ -274,32 +274,27 @@ if st.button("🔮 Predict Rent", use_container_width=True, type="primary"): # p
     is_negotiable = 1 if is_negotiable_str == "Yes" else 0
 
     # Creating the feature vector
-    # model.predict() needs a 2D array, hence the double brackets is used. Usually, we give features for multiple samples, hence the shape would be (n_samples, n_features).
-    features = np.array([[ location_enc, city_enc, latitude, longitude, num_bathrooms, num_balconies, is_negotiable, security_deposit, status_enc,size, bhk, rooms_num, prop_enc, verification_days]]) # Final shape: (1, 14) 
-
-# Creating the feature vector as a DataFrame (preserves feature names)
     input_dict = {
-        "location":          location_enc,
+        "location": location_enc,
         "city": city_enc,
-        "latitude":          float(latitude),
-        "longitude":         float(longitude),
-        "numBathrooms":      int(num_bathrooms),
-        "numBalconies":      int(num_balconies),
-        "isNegotiable":      int(is_negotiable),
-        "SecurityDeposit":   int(security_deposit),
-        "Status":            status_enc,
-        "Size_ft²":          int(size),
-        "BHK":               int(bhk),
-        "rooms_num":         int(rooms_num),
-        "property_type":     prop_enc,
+        "latitude": float(latitude),
+        "longitude": float(longitude),
+        "numBathrooms": int(num_bathrooms),
+        "numBalconies": int(num_balconies),
+        "isNegotiable": int(is_negotiable),
+        "SecurityDeposit": int(security_deposit),
+        "Status": status_enc,
+        "Size_ft²": int(size),
+        "BHK": int(bhk),
+        "rooms_num": int(rooms_num),
+        "property_type": prop_enc,
         "verification_days": int(verification_days),
     }
-
+    
     features = pd.DataFrame([input_dict])  # shape (1, 14) with column names
 
     # Get prediction
     predicted_rent = model.predict(features)[0]
-    # .predict() returns numpy  array([35000.0]); [0] gives the scalar value, since only 1 output is there. 
     
     # Show result
     st.success(f"### 💰 Estimated Monthly Rent: ₹ {predicted_rent:,.0f}")
