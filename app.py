@@ -277,6 +277,26 @@ if st.button("🔮 Predict Rent", use_container_width=True, type="primary"): # p
     # model.predict() needs a 2D array, hence the double brackets is used. Usually, we give features for multiple samples, hence the shape would be (n_samples, n_features).
     features = np.array([[ location_enc, city_enc, latitude, longitude, num_bathrooms, num_balconies, is_negotiable, security_deposit, status_enc,size, bhk, rooms_num, prop_enc, verification_days]]) # Final shape: (1, 14) 
 
+# Creating the feature vector as a DataFrame (preserves feature names)
+    input_dict = {
+        "location":          location_enc,
+        "city": city_enc,
+        "latitude":          float(latitude),
+        "longitude":         float(longitude),
+        "numBathrooms":      int(num_bathrooms),
+        "numBalconies":      int(num_balconies),
+        "isNegotiable":      int(is_negotiable),
+        "SecurityDeposit":   int(security_deposit),
+        "Status":            status_enc,
+        "Size_ft²":          int(size),
+        "BHK":               int(bhk),
+        "rooms_num":         int(rooms_num),
+        "property_type":     prop_enc,
+        "verification_days": int(verification_days),
+    }
+
+    features = pd.DataFrame([input_dict])  # shape (1, 14) with column names
+
     # Get prediction
     predicted_rent = model.predict(features)[0]
     # .predict() returns numpy  array([35000.0]); [0] gives the scalar value, since only 1 output is there. 
@@ -300,4 +320,3 @@ if st.button("🔮 Predict Rent", use_container_width=True, type="primary"): # p
 
 st.markdown("---")
 st.caption("UrbanNest Analytics · Powered by Random Forest · Built with Streamlit 🚀")
-
